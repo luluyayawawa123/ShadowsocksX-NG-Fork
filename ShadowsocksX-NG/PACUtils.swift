@@ -16,6 +16,33 @@ let PACUserRuleFilePath = PACRulesDirPath + "user-rule.txt"
 let PACFilePath = PACRulesDirPath + "gfwlist.js"
 let GFWListFilePath = PACRulesDirPath + "gfwlist.txt"
 
+func gfwListModifiedDate(at path: String) -> Date? {
+    guard let encoded = try? Data(contentsOf: URL(fileURLWithPath: path)),
+        let decoded = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters),
+        let text = String(data: decoded, encoding: .utf8),
+        let header = text.components(separatedBy: .newlines).first(where: { $0.hasPrefix("! Last Modified: ") }) else {
+        return nil
+    }
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+    return formatter.date(from: String(header.dropFirst("! Last Modified: ".count)))
+}
+
+func shouldInstallBundledGFWList() -> Bool {
+    if !FileManager.default.fileExists(atPath: GFWListFilePath) {
+        return true
+    }
+    guard let bundledPath = Bundle.main.path(forResource: "gfwlist", ofType: "txt"),
+        let bundledDate = gfwListModifiedDate(at: bundledPath) else {
+        return false
+    }
+    guard let localDate = gfwListModifiedDate(at: GFWListFilePath) else {
+        return true
+    }
+    return bundledDate > localDate
+}
+
 
 // Because of LocalSocks5.ListenPort may be changed
 func SyncPac() {
@@ -39,6 +66,9 @@ func SyncPac() {
     if !fileMgr.fileExists(atPath: PACFilePath) {
         needGenerate = true
     }
+    if shouldInstallBundledGFWList() {
+        needGenerate = true
+    }
     
     if needGenerate {
         if !GeneratePACFile() {
@@ -60,10 +90,15 @@ func GeneratePACFile() -> Bool {
         }
     }
     
-    // If gfwlist.txt is not exsited, copy from bundle
-    if !fileMgr.fileExists(atPath: GFWListFilePath) {
-        let src = Bundle.main.path(forResource: "gfwlist", ofType: "txt")
-        try! fileMgr.copyItem(atPath: src!, toPath: GFWListFilePath)
+    // Install the bundled list only when it is newer than the local list.
+    if shouldInstallBundledGFWList() {
+        do {
+            let src = Bundle.main.url(forResource: "gfwlist", withExtension: "txt")!
+            try Data(contentsOf: src).write(to: URL(fileURLWithPath: GFWListFilePath), options: .atomic)
+        } catch {
+            NSLog("Install bundled GFWList failed: \(error)")
+            return false
+        }
     }
     
     // If user-rule.txt is not exsited, copy from bundle

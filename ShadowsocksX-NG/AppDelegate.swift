@@ -214,8 +214,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         updateRunningModeMenu()
         
         ProxyConfHelper.install()
-        ProxyConfHelper.startMonitorPAC()
         applyConfig()
+        ProxyConfHelper.startMonitorPAC()
 
         // Register global hotkey
         ShortcutsController.bindShortcuts()

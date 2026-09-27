@@ -138,6 +138,8 @@ GCDWebServer *webServer = nil;
 }
 
 + (void)enablePACProxy {
+    // Reapplying the same PAC URL may leave the system using a cached script.
+    [self disableProxy];
     //start server here and then using the string next line
     //next two lines can open gcdwebserver and work around pac file
     NSString* PACFilePath = [self getPACFilePath];
@@ -264,13 +266,16 @@ GCDWebServer *webServer = nil;
     NSString* PACFilePath = [self getPACFilePath];
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     int fileId = open([PACFilePath UTF8String], O_EVTONLY);
+    if (fileId < 0) {
+        return;
+    }
     __block dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, fileId,
                                                               DISPATCH_VNODE_DELETE | DISPATCH_VNODE_WRITE | DISPATCH_VNODE_EXTEND | DISPATCH_VNODE_ATTRIB | DISPATCH_VNODE_LINK | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_REVOKE,
                                                               queue);
     dispatch_source_set_event_handler(source, ^
                                       {
                                           unsigned long flags = dispatch_source_get_data(source);
-                                          if(flags & DISPATCH_VNODE_DELETE)
+                                          if(flags & (DISPATCH_VNODE_DELETE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_REVOKE))
                                           {
                                               dispatch_source_cancel(source);
                                           }
@@ -281,7 +286,6 @@ GCDWebServer *webServer = nil;
                                           NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
                                           if ([defaults boolForKey:@"ShadowsocksOn"]) {
                                               if ([[defaults stringForKey:@"ShadowsocksRunningMode"] isEqualToString:@"auto"]) {
-                                                  [ProxyConfHelper disableProxy];
                                                   [ProxyConfHelper enablePACProxy];
                                               }
                                           }
@@ -289,6 +293,7 @@ GCDWebServer *webServer = nil;
     dispatch_source_set_cancel_handler(source, ^(void) 
                                        {
                                            close(fileId);
+                                           [ProxyConfHelper startMonitorPAC];
                                        });
     dispatch_resume(source);
 }
