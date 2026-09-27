@@ -44,6 +44,8 @@
 
 推送分支代码会运行 [测试构建](https://github.com/luluyayawawa123/ShadowsocksX-NG-Fork/actions/workflows/feature.yml)。从要发布的提交创建并推送新版本 Tag，会运行 [正式构建](https://github.com/luluyayawawa123/ShadowsocksX-NG-Fork/actions/workflows/release.yml)，自动生成 DMG、校验文件和 GitHub Release。
 
+只修改 Markdown 文档或许可证时，会跳过测试构建；如果同一次提交还修改了程序、构建脚本或规则资源，测试构建仍会运行。
+
 如要贡献代码，请基于最新的 `develop` 新建独立分支提交修改；分支流程可参考 [GitFlow](https://nvie.com/posts/a-successful-git-branching-model/)。
 
 ## 反馈与许可
