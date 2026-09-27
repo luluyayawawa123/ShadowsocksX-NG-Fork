@@ -136,7 +136,7 @@ c-ares:
 .PHONY: libsodium
 libsodium:
 	cd libsodium \
-		&& ./autogen.sh \
+		&& DO_NOT_UPDATE_CONFIG_SCRIPTS=1 ./autogen.sh \
 		&& CFLAGS="-target $(TARGET)" ./configure --prefix $${PWD}/../dist/$(ARCH)/libsodium \
 		--host=$(TARGET) \
 		--enable-static \
