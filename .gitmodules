@@ -27,7 +27,7 @@
 	url = https://github.com/shadowsocks/v2ray-plugin
 [submodule "deps/kcptun"]
 	path = deps/kcptun
-	url = https://github.com/xtaci/kcptun
+	url = https://github.com/suesn/kcptun.git
 [submodule "deps/simple-obfs"]
 	path = deps/simple-obfs
 	url = https://github.com/shadowsocks/simple-obfs
