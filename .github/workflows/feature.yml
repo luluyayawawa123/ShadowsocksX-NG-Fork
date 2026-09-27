@@ -4,9 +4,19 @@ on:
   push:
     branches:
       - '*'
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.markdown'
+      - '**/*.rst'
+      - 'LICENSE'
   pull_request:
     branches:
       - '*'
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.markdown'
+      - '**/*.rst'
+      - 'LICENSE'
 
 jobs:
   build:
