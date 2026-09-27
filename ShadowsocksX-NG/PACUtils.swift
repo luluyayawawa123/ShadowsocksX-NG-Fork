@@ -269,7 +269,7 @@ private func showGFWListUpdateResult(_ title: String, detail: String, success: B
 
 private func showGFWListUpdateFailure(_ reason: String) {
     showGFWListUpdateResult("GFWList update failed.",
-        reason + "\n\n" + currentGFWListStatus(), success: false)
+        detail: reason + "\n\n" + currentGFWListStatus(), success: false)
 }
 
 func UpdatePACFromGFWList() {
@@ -309,14 +309,14 @@ func UpdatePACFromGFWList() {
                 if let newestDate = [localDate, bundledDate].compactMap({ $0 }).max(),
                     downloadedDate < newestDate {
                     showGFWListUpdateResult("GFWList update not needed.",
-                        String(format: "The downloaded rules are older (%@). Your newer local or built-in rules were kept.".localized,
+                        detail: String(format: "The downloaded rules are older (%@). Your newer local or built-in rules were kept.".localized,
                             gfwListDateDescription(downloadedDate)) + "\n\n" + currentGFWListStatus(), success: true)
                     return
                 }
                 if downloadedRules == localRules {
                     if GeneratePACFile() {
                         showGFWListUpdateResult("GFWList is already up to date.",
-                            String(format: "The local rules already match the download (%@); no list update is needed. PAC was refreshed.".localized,
+                            detail: String(format: "The local rules already match the download (%@); no list update is needed. PAC was refreshed.".localized,
                                 gfwListDateDescription(downloadedDate)), success: true, refreshPAC: true)
                     } else {
                         showGFWListUpdateFailure("The rules match, but PAC generation failed. Check disk space, permissions, and custom rules.".localized)
@@ -327,7 +327,7 @@ func UpdatePACFromGFWList() {
                     try downloadedData.write(to: listURL, options: .atomic)
                     if GeneratePACFile() {
                         showGFWListUpdateResult("GFWList and PAC updated.",
-                            String(format: "Downloaded and applied GFWList dated %@. Your custom rules were kept.".localized,
+                            detail: String(format: "Downloaded and applied GFWList dated %@. Your custom rules were kept.".localized,
                                 gfwListDateDescription(downloadedDate)), success: true, refreshPAC: true)
                     } else {
                         do {
