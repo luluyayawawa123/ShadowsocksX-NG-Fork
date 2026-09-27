@@ -1,45 +1,37 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-
+name: 问题反馈
+about: 报告软件故障，帮助我们定位问题
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**问题描述**
 
-**To Reproduce**
-Steps to reproduce the behavior
+请简要说明发生了什么。
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**复现步骤**
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+1. （第一步）
+2. （第二步）
+3. （第三步）
 
-**System and Shadowsocksx-NG version: (please complete the following information):**
- - OS Version: [e.g. 10.13.1]
- - Version [e.g. 22]
+**预期结果与实际结果**
 
-**Diagnoisis file:**
+请分别说明你原本希望看到什么，以及软件实际发生了什么。
 
-Please first upgrade to the latest version.
-Then export the diagnosis file and upload it to here.
+**系统与软件版本**
 
-**ss-local.log**
+- macOS 版本：
+- ShadowsocksX-NG Fork 版本：
 
-Please upload the ss-local.log file here the file is in `~/Library/Logs`
-1) Open 'Advanced Settings -> enable Verbose Mode'
-2) Continue run `Shadowsocksx-NG` for 5 minutes
-3) Upload the `~/Library/Logs/ss-local.log` here (with or without compress)
+**截图或录屏**
 
-**Application log**
+如果有助于说明问题，请附上截图或录屏。
 
-Open the `Console.app` and search `Shadowsocksx-NG`
-Copy paste the log here
+**诊断与日志**
 
-**Crash Log**
+请先确认是否使用本仓库的最新稳定版。如果问题仍在，可以通过菜单栏的“导出诊断信息...”附上诊断文件，以及 `~/Library/Logs/ss-local.log` 中相关的日志。需要详细日志时，可在“高级设置...”中开启“Enable Verbose Mode”，复现问题后再收集日志。
 
-If the app crashes and pop up a crash log, please copy and paste here
+如果软件闪退，也可以附上 `~/Library/Logs/DiagnosticReports/` 中对应的崩溃报告。公开提交前，请遮盖服务器地址、密码等个人信息。
 
-**Additional context**
-Add any other context about the problem here.
+**其他补充**
+
+还有哪些情况可能与这个问题有关？

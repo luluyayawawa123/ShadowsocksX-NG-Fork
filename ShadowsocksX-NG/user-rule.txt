@@ -1,2 +1,2 @@
-! Put user rules line by line in this file.
-! See https://adblockplus.org/en/filter-cheatsheet
+! 在此文件中每行填写一条自定义规则。
+! 规则语法参考：https://adblockplus.org/en/filter-cheatsheet
