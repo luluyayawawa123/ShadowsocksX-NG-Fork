@@ -252,12 +252,8 @@ private func currentGFWListStatus() -> String {
     return rulesStatus + "\n" + pacStatus
 }
 
-private func showGFWListUpdateResult(_ title: String, detail: String, success: Bool, refreshPAC: Bool = false) {
+private func showGFWListUpdateResult(_ title: String, detail: String, success: Bool) {
     DispatchQueue.main.async {
-        if refreshPAC && UserDefaults.standard.bool(forKey: "ShadowsocksOn") &&
-            UserDefaults.standard.string(forKey: "ShadowsocksRunningMode") == "auto" {
-            ProxyConfHelper.enablePACProxy()
-        }
         let alert = NSAlert()
         alert.messageText = title.localized
         alert.informativeText = detail
@@ -317,7 +313,7 @@ func UpdatePACFromGFWList() {
                     if GeneratePACFile() {
                         showGFWListUpdateResult("GFWList is already up to date.",
                             detail: String(format: "The local rules already match the download (%@); no list update is needed. PAC was refreshed.".localized,
-                                gfwListDateDescription(downloadedDate)), success: true, refreshPAC: true)
+                                gfwListDateDescription(downloadedDate)), success: true)
                     } else {
                         showGFWListUpdateFailure("The rules match, but PAC generation failed. Check disk space, permissions, and custom rules.".localized)
                     }
@@ -328,7 +324,7 @@ func UpdatePACFromGFWList() {
                     if GeneratePACFile() {
                         showGFWListUpdateResult("GFWList and PAC updated.",
                             detail: String(format: "Downloaded and applied GFWList dated %@. Your custom rules were kept.".localized,
-                                gfwListDateDescription(downloadedDate)), success: true, refreshPAC: true)
+                                gfwListDateDescription(downloadedDate)), success: true)
                     } else {
                         do {
                             if let oldData = oldData {

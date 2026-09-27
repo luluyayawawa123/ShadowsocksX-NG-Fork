@@ -283,12 +283,13 @@ GCDWebServer *webServer = nil;
                                           // The PAC file was written by atomically (PACUtils.swift:134)
                                           // That means DISPATCH_VNODE_DELETE event always be trigged
                                           // Need to be run the following statements in any events
-                                          NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-                                          if ([defaults boolForKey:@"ShadowsocksOn"]) {
-                                              if ([[defaults stringForKey:@"ShadowsocksRunningMode"] isEqualToString:@"auto"]) {
+                                          dispatch_async(dispatch_get_main_queue(), ^{
+                                              NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+                                              if ([defaults boolForKey:@"ShadowsocksOn"] &&
+                                                  [[defaults stringForKey:@"ShadowsocksRunningMode"] isEqualToString:@"auto"]) {
                                                   [ProxyConfHelper enablePACProxy];
                                               }
-                                          }
+                                          });
                                       });
     dispatch_source_set_cancel_handler(source, ^(void) 
                                        {
