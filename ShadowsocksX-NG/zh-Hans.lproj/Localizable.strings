@@ -16,6 +16,8 @@
 
 "Failed to download latest GFW List." = "下载最新的 GFW 列表失败";
 
+"Failed to update PAC from GFW List." = "使用 GFW List 更新 PAC 失败";
+
 /*
  * ./AppDelegate.swift
  */
@@ -81,5 +83,4 @@
  */
 
 "New Server" = "新建服务器";
-
 

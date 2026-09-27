@@ -6,7 +6,7 @@
 //  Copyright © 2016年 qiuyuzhou. All rights reserved.
 //
 
-import Foundation
+import Cocoa
 import Alamofire
 
 let OldErrorPACRulesDirPath = NSHomeDirectory() + "/.ShadowsocksX-NE/"
@@ -194,6 +194,16 @@ func GeneratePACFile() -> Bool {
     return false
 }
 
+private func showGFWListUpdateResult(_ message: String, success: Bool) {
+    DispatchQueue.main.async {
+        let alert = NSAlert()
+        alert.messageText = message.localized
+        alert.alertStyle = success ? .informational : .warning
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+}
+
 func UpdatePACFromGFWList() {
     // Make the dir if rulesDirPath is not exesited.
     if !FileManager.default.fileExists(atPath: PACRulesDirPath) {
@@ -201,34 +211,38 @@ func UpdatePACFromGFWList() {
             try FileManager.default.createDirectory(atPath: PACRulesDirPath
                 , withIntermediateDirectories: true, attributes: nil)
         } catch {
+            showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
+            return
         }
     }
     
-    let url = UserDefaults.standard.string(forKey: "GFWListURL")
-    AF.request(url!)
+    guard let url = UserDefaults.standard.string(forKey: "GFWListURL") else {
+        showGFWListUpdateResult("Failed to download latest GFW List.", success: false)
+        return
+    }
+    AF.request(url)
         .validate()
         .responseString {
             response in
             switch response.result {
             case .success(let v):
+                guard let data = Data(base64Encoded: v, options: .ignoreUnknownCharacters),
+                    String(data: data, encoding: .utf8) != nil else {
+                    showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
+                    return
+                }
                 do {
                     try v.write(toFile: GFWListFilePath, atomically: true, encoding: String.Encoding.utf8)
                     if GeneratePACFile() {
-                        // Popup a user notification
-                        let notification = NSUserNotification()
-                        notification.title = "PAC has been updated by latest GFW List.".localized
-                        NSUserNotificationCenter.default
-                            .deliver(notification)
+                        showGFWListUpdateResult("PAC has been updated by latest GFW List.", success: true)
+                    } else {
+                        showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
                     }
                 } catch {
-                    
+                    showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
                 }
             case .failure:
-                // Popup a user notification
-                let notification = NSUserNotification()
-                notification.title = "Failed to download latest GFW List.".localized
-                NSUserNotificationCenter.default
-                    .deliver(notification)
+                showGFWListUpdateResult("Failed to download latest GFW List.", success: false)
             }
         }
 }
