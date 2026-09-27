@@ -1,15 +1,16 @@
 VERSION ?= 0.0.0
+BUILD_NUMBER ?= 1
 
 .PHONY: all
 all: debug
 
 .PHONY: debug
 debug: deps/dist set-version
-	xcodebuild -workspace ShadowsocksX-NG.xcworkspace -scheme ShadowsocksX-NG -configuration Debug SYMROOT=$${PWD}/build
+	xcodebuild -workspace ShadowsocksX-NG.xcworkspace -scheme ShadowsocksX-NG -configuration Debug CURRENT_PROJECT_VERSION=$(BUILD_NUMBER) SYMROOT=$${PWD}/build
 
 .PHONY: release
 release: deps/dist set-version
-	xcodebuild -workspace ShadowsocksX-NG.xcworkspace -scheme ShadowsocksX-NG -configuration Release SYMROOT=$${PWD}/build
+	xcodebuild -workspace ShadowsocksX-NG.xcworkspace -scheme ShadowsocksX-NG -configuration Release CURRENT_PROJECT_VERSION=$(BUILD_NUMBER) SYMROOT=$${PWD}/build
 
 .PHONY: debug-dmg release-dmg
 debug-dmg release-dmg: TARGET = $(subst -dmg,,$@)

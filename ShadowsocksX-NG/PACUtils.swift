@@ -16,17 +16,31 @@ let PACUserRuleFilePath = PACRulesDirPath + "user-rule.txt"
 let PACFilePath = PACRulesDirPath + "gfwlist.js"
 let GFWListFilePath = PACRulesDirPath + "gfwlist.txt"
 
-func gfwListModifiedDate(at path: String) -> Date? {
-    guard let encoded = try? Data(contentsOf: URL(fileURLWithPath: path)),
-        let decoded = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters),
+private func decodedGFWList(_ encoded: Data) -> String? {
+    guard let decoded = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters),
         let text = String(data: decoded, encoding: .utf8),
-        let header = text.components(separatedBy: .newlines).first(where: { $0.hasPrefix("! Last Modified: ") }) else {
+        text.hasPrefix("[AutoProxy") else {
+        return nil
+    }
+    return text
+}
+
+private func gfwListModifiedDate(in text: String) -> Date? {
+    guard let header = text.components(separatedBy: .newlines).first(where: { $0.hasPrefix("! Last Modified: ") }) else {
         return nil
     }
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
     return formatter.date(from: String(header.dropFirst("! Last Modified: ".count)))
+}
+
+func gfwListModifiedDate(at path: String) -> Date? {
+    guard let encoded = try? Data(contentsOf: URL(fileURLWithPath: path)),
+        let text = decodedGFWList(encoded) else {
+        return nil
+    }
+    return gfwListModifiedDate(in: text)
 }
 
 func shouldInstallBundledGFWList() -> Bool {
@@ -82,18 +96,25 @@ func GeneratePACFile() -> Bool {
     let fileMgr = FileManager.default
     // Maker the dir if rulesDirPath is not exesited.
     if !fileMgr.fileExists(atPath: PACRulesDirPath) {
-        if fileMgr.fileExists(atPath: OldErrorPACRulesDirPath) {
-            try! fileMgr.moveItem(atPath: OldErrorPACRulesDirPath, toPath: PACRulesDirPath)
-        } else {
-            try! fileMgr.createDirectory(atPath: PACRulesDirPath
-                , withIntermediateDirectories: true, attributes: nil)
+        do {
+            if fileMgr.fileExists(atPath: OldErrorPACRulesDirPath) {
+                try fileMgr.moveItem(atPath: OldErrorPACRulesDirPath, toPath: PACRulesDirPath)
+            } else {
+                try fileMgr.createDirectory(atPath: PACRulesDirPath
+                    , withIntermediateDirectories: true, attributes: nil)
+            }
+        } catch {
+            NSLog("Create PAC rules directory failed: \(error)")
+            return false
         }
     }
     
     // Install the bundled list only when it is newer than the local list.
     if shouldInstallBundledGFWList() {
         do {
-            let src = Bundle.main.url(forResource: "gfwlist", withExtension: "txt")!
+            guard let src = Bundle.main.url(forResource: "gfwlist", withExtension: "txt") else {
+                return false
+            }
             try Data(contentsOf: src).write(to: URL(fileURLWithPath: GFWListFilePath), options: .atomic)
         } catch {
             NSLog("Install bundled GFWList failed: \(error)")
@@ -103,18 +124,29 @@ func GeneratePACFile() -> Bool {
     
     // If user-rule.txt is not exsited, copy from bundle
     if !fileMgr.fileExists(atPath: PACUserRuleFilePath) {
-        let src = Bundle.main.path(forResource: "user-rule", ofType: "txt")
-        try! fileMgr.copyItem(atPath: src!, toPath: PACUserRuleFilePath)
+        guard let src = Bundle.main.path(forResource: "user-rule", ofType: "txt") else {
+            return false
+        }
+        do {
+            try fileMgr.copyItem(atPath: src, toPath: PACUserRuleFilePath)
+        } catch {
+            NSLog("Install user-rule.txt failed: \(error)")
+            return false
+        }
     }
     
-    let socks5Address = UserDefaults.standard.string(forKey: "LocalSocks5.ListenAddress")!
+    guard let socks5Address = UserDefaults.standard.string(forKey: "LocalSocks5.ListenAddress") else {
+        return false
+    }
     let socks5Port = UserDefaults.standard.integer(forKey: "LocalSocks5.ListenPort")
     
     do {
         let gfwlist = try String(contentsOfFile: GFWListFilePath, encoding: String.Encoding.utf8)
         if let data = Data(base64Encoded: gfwlist, options: .ignoreUnknownCharacters) {
-            let str = String(data: data, encoding: String.Encoding.utf8)
-            var lines = str!.components(separatedBy: CharacterSet.newlines)
+            guard let str = String(data: data, encoding: .utf8), str.hasPrefix("[AutoProxy") else {
+                return false
+            }
+            var lines = str.components(separatedBy: CharacterSet.newlines)
             
             do {
                 let userRuleStr = try String(contentsOfFile: PACUserRuleFilePath, encoding: String.Encoding.utf8)
@@ -136,7 +168,8 @@ func GeneratePACFile() -> Bool {
                     return !userRuleLines.contains(String(line[i...]))
                 }
             } catch {
-                NSLog("Not found user-rule.txt")
+                NSLog("Read user-rule.txt failed: \(error)")
+                return false
             }
             
             // Filter empty and comment lines
@@ -155,36 +188,40 @@ func GeneratePACFile() -> Bool {
                 // rule lines to json array
                 let rulesJsonData: Data
                     = try JSONSerialization.data(withJSONObject: lines, options: .prettyPrinted)
-                let rulesJsonStr = String(data: rulesJsonData, encoding: String.Encoding.utf8)
+                guard let rulesJsonStr = String(data: rulesJsonData, encoding: .utf8),
+                    let jsPath = Bundle.main.url(forResource: "abp", withExtension: "js"),
+                    let jsStr = try? String(contentsOf: jsPath, encoding: .utf8) else {
+                    return false
+                }
                 
                 // Get raw pac js
-                let jsPath = Bundle.main.url(forResource: "abp", withExtension: "js")
-                let jsData = try? Data(contentsOf: jsPath!)
-                var jsStr = String(data: jsData!, encoding: String.Encoding.utf8)
+                var updatedJS = jsStr
                 
                 // Replace rules placeholder in pac js
-                jsStr = jsStr!.replacingOccurrences(of: "__RULES__"
-                    , with: rulesJsonStr!)
+                updatedJS = updatedJS.replacingOccurrences(of: "__RULES__"
+                    , with: rulesJsonStr)
                 // Replace __SOCKS5PORT__ palcholder in pac js
-                jsStr = jsStr!.replacingOccurrences(of: "__SOCKS5PORT__"
+                updatedJS = updatedJS.replacingOccurrences(of: "__SOCKS5PORT__"
                     , with: "\(socks5Port)")
                 // Replace __SOCKS5ADDR__ palcholder in pac js
                 var sin6 = sockaddr_in6()
                 if socks5Address.withCString({ cstring in inet_pton(AF_INET6, cstring, &sin6.sin6_addr) }) == 1 {
-                    jsStr = jsStr!.replacingOccurrences(of: "__SOCKS5ADDR__"
+                    updatedJS = updatedJS.replacingOccurrences(of: "__SOCKS5ADDR__"
                         , with: "[\(socks5Address)]")
                 } else {
-                    jsStr = jsStr!.replacingOccurrences(of: "__SOCKS5ADDR__"
+                    updatedJS = updatedJS.replacingOccurrences(of: "__SOCKS5ADDR__"
                         , with: socks5Address)
                 }
                 
                 // Write the pac js to file.
-                try jsStr!.data(using: String.Encoding.utf8)?
-                    .write(to: URL(fileURLWithPath: PACFilePath), options: .atomic)
+                guard let pacData = updatedJS.data(using: .utf8) else {
+                    return false
+                }
+                try pacData.write(to: URL(fileURLWithPath: PACFilePath), options: .atomic)
                 
                 return true
             } catch {
-                
+                NSLog("Generate PAC file failed: \(error)")
             }
         }
         
@@ -194,14 +231,45 @@ func GeneratePACFile() -> Bool {
     return false
 }
 
-private func showGFWListUpdateResult(_ message: String, success: Bool) {
+private func gfwListDateDescription(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "yyyy-MM-dd HH:mm 'UTC'"
+    return formatter.string(from: date)
+}
+
+private func currentGFWListStatus() -> String {
+    let rulesStatus: String
+    if let date = gfwListModifiedDate(at: GFWListFilePath) {
+        rulesStatus = String(format: "Local GFWList date: %@.".localized, gfwListDateDescription(date))
+    } else {
+        rulesStatus = "No valid local GFWList is available.".localized
+    }
+    let pacStatus = FileManager.default.fileExists(atPath: PACFilePath)
+        ? "An existing PAC file is available.".localized
+        : "No PAC file is available.".localized
+    return rulesStatus + "\n" + pacStatus
+}
+
+private func showGFWListUpdateResult(_ title: String, detail: String, success: Bool, refreshPAC: Bool = false) {
     DispatchQueue.main.async {
+        if refreshPAC && UserDefaults.standard.bool(forKey: "ShadowsocksOn") &&
+            UserDefaults.standard.string(forKey: "ShadowsocksRunningMode") == "auto" {
+            ProxyConfHelper.enablePACProxy()
+        }
         let alert = NSAlert()
-        alert.messageText = message.localized
+        alert.messageText = title.localized
+        alert.informativeText = detail
         alert.alertStyle = success ? .informational : .warning
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
+}
+
+private func showGFWListUpdateFailure(_ reason: String) {
+    showGFWListUpdateResult("GFWList update failed.",
+        reason + "\n\n" + currentGFWListStatus(), success: false)
 }
 
 func UpdatePACFromGFWList() {
@@ -211,13 +279,13 @@ func UpdatePACFromGFWList() {
             try FileManager.default.createDirectory(atPath: PACRulesDirPath
                 , withIntermediateDirectories: true, attributes: nil)
         } catch {
-            showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
+            showGFWListUpdateFailure("Cannot create the rules folder. Check disk space and permissions.".localized)
             return
         }
     }
     
-    guard let url = UserDefaults.standard.string(forKey: "GFWListURL") else {
-        showGFWListUpdateResult("Failed to download latest GFW List.", success: false)
+    guard let url = UserDefaults.standard.string(forKey: "GFWListURL"), !url.isEmpty else {
+        showGFWListUpdateFailure("No GFWList download URL is configured.".localized)
         return
     }
     AF.request(url)
@@ -225,24 +293,63 @@ func UpdatePACFromGFWList() {
         .responseString {
             response in
             switch response.result {
-            case .success(let v):
-                guard let data = Data(base64Encoded: v, options: .ignoreUnknownCharacters),
-                    String(data: data, encoding: .utf8) != nil else {
-                    showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
+            case .success(let downloaded):
+                let downloadedData = Data(downloaded.utf8)
+                guard let downloadedRules = decodedGFWList(downloadedData),
+                    let downloadedDate = gfwListModifiedDate(in: downloadedRules) else {
+                    showGFWListUpdateFailure("The download is not a valid dated GFWList. Check the configured URL.".localized)
+                    return
+                }
+                let listURL = URL(fileURLWithPath: GFWListFilePath)
+                let oldData = try? Data(contentsOf: listURL)
+                let localRules = oldData.flatMap { decodedGFWList($0) }
+                let localDate = localRules.flatMap { gfwListModifiedDate(in: $0) }
+                let bundledDate = Bundle.main.path(forResource: "gfwlist", ofType: "txt")
+                    .flatMap { gfwListModifiedDate(at: $0) }
+                if let newestDate = [localDate, bundledDate].compactMap({ $0 }).max(),
+                    downloadedDate < newestDate {
+                    showGFWListUpdateResult("GFWList update not needed.",
+                        String(format: "The downloaded rules are older (%@). Your newer local or built-in rules were kept.".localized,
+                            gfwListDateDescription(downloadedDate)) + "\n\n" + currentGFWListStatus(), success: true)
+                    return
+                }
+                if downloadedRules == localRules {
+                    if GeneratePACFile() {
+                        showGFWListUpdateResult("GFWList is already up to date.",
+                            String(format: "The local rules already match the download (%@); no list update is needed. PAC was refreshed.".localized,
+                                gfwListDateDescription(downloadedDate)), success: true, refreshPAC: true)
+                    } else {
+                        showGFWListUpdateFailure("The rules match, but PAC generation failed. Check disk space, permissions, and custom rules.".localized)
+                    }
                     return
                 }
                 do {
-                    try v.write(toFile: GFWListFilePath, atomically: true, encoding: String.Encoding.utf8)
+                    try downloadedData.write(to: listURL, options: .atomic)
                     if GeneratePACFile() {
-                        showGFWListUpdateResult("PAC has been updated by latest GFW List.", success: true)
+                        showGFWListUpdateResult("GFWList and PAC updated.",
+                            String(format: "Downloaded and applied GFWList dated %@. Your custom rules were kept.".localized,
+                                gfwListDateDescription(downloadedDate)), success: true, refreshPAC: true)
                     } else {
-                        showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
+                        do {
+                            if let oldData = oldData {
+                                try oldData.write(to: listURL, options: .atomic)
+                            } else {
+                                try FileManager.default.removeItem(at: listURL)
+                            }
+                            showGFWListUpdateFailure("PAC generation failed. The previous rules were restored; check disk space, permissions, and custom rules.".localized)
+                        } catch {
+                            showGFWListUpdateFailure("PAC generation failed, and the previous rules could not be restored. Check disk space and permissions.".localized)
+                        }
                     }
                 } catch {
-                    showGFWListUpdateResult("Failed to update PAC from GFW List.", success: false)
+                    showGFWListUpdateFailure("The rules could not be saved. Check disk space and permissions.".localized)
                 }
             case .failure:
-                showGFWListUpdateResult("Failed to download latest GFW List.", success: false)
+                if let statusCode = response.response?.statusCode {
+                    showGFWListUpdateFailure(String(format: "The server returned HTTP %d. Check the download URL or try again later.".localized, statusCode))
+                } else {
+                    showGFWListUpdateFailure("Download failed. Check your network connection and GFWList URL, then try again.".localized)
+                }
             }
         }
 }

@@ -18,6 +18,27 @@
 
 "Failed to update PAC from GFW List." = "使用 GFW List 更新 PAC 失败";
 
+"GFWList update failed." = "GFWList 更新失败";
+"GFWList update not needed." = "无需更新 GFWList";
+"GFWList is already up to date." = "本地 GFWList 已是最新";
+"GFWList and PAC updated." = "GFWList 和 PAC 已更新";
+"Local GFWList date: %@." = "当前本地 GFWList 日期：%@。";
+"No valid local GFWList is available." = "目前没有可用的本地 GFWList。";
+"An existing PAC file is available." = "目前有可用的 PAC 文件。";
+"No PAC file is available." = "目前没有可用的 PAC 文件。";
+"Cannot create the rules folder. Check disk space and permissions." = "无法创建规则文件夹，请检查磁盘空间和文件权限。";
+"No GFWList download URL is configured." = "尚未设置 GFWList 下载地址。";
+"The download is not a valid dated GFWList. Check the configured URL." = "下载的内容不是带有官方日期的有效 GFWList，请检查下载地址。";
+"The downloaded rules are older (%@). Your newer local or built-in rules were kept." = "下载到的规则较旧（%@），已保留本地或内置的较新规则。";
+"The local rules already match the download (%@); no list update is needed. PAC was refreshed." = "本地规则与下载内容一致（%@），无需更新列表；PAC 已刷新。";
+"The rules match, but PAC generation failed. Check disk space, permissions, and custom rules." = "规则已是最新，但生成 PAC 失败。请检查磁盘空间、文件权限和自定义规则。";
+"Downloaded and applied GFWList dated %@. Your custom rules were kept." = "已下载并应用日期为 %@ 的 GFWList；自定义规则已保留。";
+"PAC generation failed. The previous rules were restored; check disk space, permissions, and custom rules." = "生成 PAC 失败，已恢复原有规则。请检查磁盘空间、文件权限和自定义规则。";
+"PAC generation failed, and the previous rules could not be restored. Check disk space and permissions." = "生成 PAC 失败，且无法恢复原有规则。请检查磁盘空间和文件权限。";
+"The rules could not be saved. Check disk space and permissions." = "无法保存下载的规则，请检查磁盘空间和文件权限。";
+"The server returned HTTP %d. Check the download URL or try again later." = "服务器返回 HTTP %d，请检查下载地址或稍后重试。";
+"Download failed. Check your network connection and GFWList URL, then try again." = "下载失败，请检查网络连接和 GFWList 下载地址，然后重试。";
+
 /*
  * ./AppDelegate.swift
  */
@@ -83,4 +104,3 @@
  */
 
 "New Server" = "新建服务器";
-

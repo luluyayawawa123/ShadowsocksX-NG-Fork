@@ -70,6 +70,27 @@
 
 "Failed to update PAC from GFW List." = "Failed to update PAC from GFW List.";
 
+"GFWList update failed." = "GFWList update failed.";
+"GFWList update not needed." = "GFWList update not needed.";
+"GFWList is already up to date." = "GFWList is already up to date.";
+"GFWList and PAC updated." = "GFWList and PAC updated.";
+"Local GFWList date: %@." = "Local GFWList date: %@.";
+"No valid local GFWList is available." = "No valid local GFWList is available.";
+"An existing PAC file is available." = "An existing PAC file is available.";
+"No PAC file is available." = "No PAC file is available.";
+"Cannot create the rules folder. Check disk space and permissions." = "Cannot create the rules folder. Check disk space and permissions.";
+"No GFWList download URL is configured." = "No GFWList download URL is configured.";
+"The download is not a valid dated GFWList. Check the configured URL." = "The download is not a valid dated GFWList. Check the configured URL.";
+"The downloaded rules are older (%@). Your newer local or built-in rules were kept." = "The downloaded rules are older (%@). Your newer local or built-in rules were kept.";
+"The local rules already match the download (%@); no list update is needed. PAC was refreshed." = "The local rules already match the download (%@); no list update is needed. PAC was refreshed.";
+"The rules match, but PAC generation failed. Check disk space, permissions, and custom rules." = "The rules match, but PAC generation failed. Check disk space, permissions, and custom rules.";
+"Downloaded and applied GFWList dated %@. Your custom rules were kept." = "Downloaded and applied GFWList dated %@. Your custom rules were kept.";
+"PAC generation failed. The previous rules were restored; check disk space, permissions, and custom rules." = "PAC generation failed. The previous rules were restored; check disk space, permissions, and custom rules.";
+"PAC generation failed, and the previous rules could not be restored. Check disk space and permissions." = "PAC generation failed, and the previous rules could not be restored. Check disk space and permissions.";
+"The rules could not be saved. Check disk space and permissions." = "The rules could not be saved. Check disk space and permissions.";
+"The server returned HTTP %d. Check the download URL or try again later." = "The server returned HTTP %d. Check the download URL or try again later.";
+"Download failed. Check your network connection and GFWList URL, then try again." = "Download failed. Check your network connection and GFWList URL, then try again.";
+
 /*
  * ./ShadowsocksX-NG/ImportWindowController.swift
  */
