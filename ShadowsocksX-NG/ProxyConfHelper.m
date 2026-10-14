@@ -117,6 +117,11 @@ GCDWebServer *webServer = nil;
 + (void)addArguments4ManualSpecifyProxyExceptions:(NSMutableArray*) args {
     NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
 
+    // Always bypass loopback, even when the user edits the exceptions list.
+    for (NSString* host in @[@"127.0.0.1", @"localhost", @"::1"]) {
+        [args addObject:@"-x"];
+        [args addObject:host];
+    }
     NSString* rawExceptions = [defaults stringForKey:@"ProxyExceptions"];
     if (rawExceptions) {
         NSCharacterSet* whites = [NSCharacterSet whitespaceAndNewlineCharacterSet];

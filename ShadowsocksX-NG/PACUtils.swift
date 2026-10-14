@@ -58,39 +58,33 @@ func shouldInstallBundledGFWList() -> Bool {
 }
 
 
-// Because of LocalSocks5.ListenPort may be changed
+// Use the active proxy endpoint consistently when regenerating PAC rules.
+private func pacProxyDirective() -> String? {
+    let defaults = UserDefaults.standard
+    let useHTTP = defaults.bool(forKey: "LocalHTTPOn")
+    let prefix = useHTTP ? "LocalHTTP" : "LocalSocks5"
+    guard let address = defaults.string(forKey: "\(prefix).ListenAddress") else {
+        return nil
+    }
+    let port = defaults.integer(forKey: "\(prefix).ListenPort")
+    var sin6 = sockaddr_in6()
+    let host = address.withCString { inet_pton(AF_INET6, $0, &sin6.sin6_addr) } == 1 ? "[\(address)]" : address
+    let endpoint = "\(host):\(port)"
+    return useHTTP ? "PROXY \(endpoint); DIRECT;" : "SOCKS5 \(endpoint); SOCKS \(endpoint); DIRECT;"
+}
+
 func SyncPac() {
-    var needGenerate = false
-    
-    let nowSocks5Address = UserDefaults.standard.string(forKey: "LocalSocks5.ListenAddress")
-    let oldSocks5Address = UserDefaults.standard.string(forKey: "LocalSocks5.ListenAddress.Old")
-    if nowSocks5Address != oldSocks5Address {
-        needGenerate = true
-        UserDefaults.standard.set(nowSocks5Address, forKey: "LocalSocks5.ListenAddress.Old")
-    }
-    
-    let nowSocks5Port = UserDefaults.standard.integer(forKey: "LocalSocks5.ListenPort")
-    let oldSocks5Port = UserDefaults.standard.integer(forKey: "LocalSocks5.ListenPort.Old")
-    if nowSocks5Port != oldSocks5Port {
-        needGenerate = true
-        UserDefaults.standard.set(nowSocks5Port, forKey: "LocalSocks5.ListenPort.Old")
-    }
-    
-    let fileMgr = FileManager.default
-    if !fileMgr.fileExists(atPath: PACFilePath) {
-        needGenerate = true
-    }
-    if shouldInstallBundledGFWList() {
-        needGenerate = true
-    }
-    
-    if needGenerate {
+    let defaults = UserDefaults.standard
+    guard let proxy = pacProxyDirective() else { return }
+    // The version also refreshes existing PAC files with the loopback bypass.
+    let signature = "1|\(proxy)"
+    if defaults.string(forKey: "PAC.ProxySignature") != signature ||
+        !FileManager.default.fileExists(atPath: PACFilePath) || shouldInstallBundledGFWList() {
         if !GeneratePACFile() {
             NSLog("GeneratePACFile failed!")
         }
     }
 }
-
 
 func GeneratePACFile() -> Bool {
     let fileMgr = FileManager.default
@@ -135,11 +129,10 @@ func GeneratePACFile() -> Bool {
         }
     }
     
-    guard let socks5Address = UserDefaults.standard.string(forKey: "LocalSocks5.ListenAddress") else {
+    guard let proxy = pacProxyDirective() else {
         return false
     }
-    let socks5Port = UserDefaults.standard.integer(forKey: "LocalSocks5.ListenPort")
-    
+
     do {
         let gfwlist = try String(contentsOfFile: GFWListFilePath, encoding: String.Encoding.utf8)
         if let data = Data(base64Encoded: gfwlist, options: .ignoreUnknownCharacters) {
@@ -200,24 +193,14 @@ func GeneratePACFile() -> Bool {
                 // Replace rules placeholder in pac js
                 updatedJS = updatedJS.replacingOccurrences(of: "__RULES__"
                     , with: rulesJsonStr)
-                // Replace __SOCKS5PORT__ palcholder in pac js
-                updatedJS = updatedJS.replacingOccurrences(of: "__SOCKS5PORT__"
-                    , with: "\(socks5Port)")
-                // Replace __SOCKS5ADDR__ palcholder in pac js
-                var sin6 = sockaddr_in6()
-                if socks5Address.withCString({ cstring in inet_pton(AF_INET6, cstring, &sin6.sin6_addr) }) == 1 {
-                    updatedJS = updatedJS.replacingOccurrences(of: "__SOCKS5ADDR__"
-                        , with: "[\(socks5Address)]")
-                } else {
-                    updatedJS = updatedJS.replacingOccurrences(of: "__SOCKS5ADDR__"
-                        , with: socks5Address)
-                }
-                
+                updatedJS = updatedJS.replacingOccurrences(of: "__PROXY__", with: proxy)
+
                 // Write the pac js to file.
                 guard let pacData = updatedJS.data(using: .utf8) else {
                     return false
                 }
                 try pacData.write(to: URL(fileURLWithPath: PACFilePath), options: .atomic)
+                UserDefaults.standard.set("1|\(proxy)", forKey: "PAC.ProxySignature")
                 
                 return true
             } catch {
