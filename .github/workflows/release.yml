@@ -32,8 +32,6 @@ jobs:
           package_name="ShadowsocksX-NG.${GITHUB_REF_NAME}"
           mv ShadowsocksX-NG.dmg "${package_name}.dmg"
           shasum -a 256 "${package_name}.dmg" > "${package_name}.dmg.checksum"
-          zip "${package_name}.zip" "${package_name}.dmg" "${package_name}.dmg.checksum"
-          shasum -a 256 "${package_name}.zip" > "${package_name}.zip.checksum"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -51,5 +49,3 @@ jobs:
           files: |
             build/Release/ShadowsocksX-NG.${{ github.ref_name }}.dmg
             build/Release/ShadowsocksX-NG.${{ github.ref_name }}.dmg.checksum
-            build/Release/ShadowsocksX-NG.${{ github.ref_name }}.zip
-            build/Release/ShadowsocksX-NG.${{ github.ref_name }}.zip.checksum

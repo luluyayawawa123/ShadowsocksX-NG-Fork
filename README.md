@@ -8,7 +8,7 @@
 
 从本仓库的 [Releases 页面](https://github.com/luluyayawawa123/ShadowsocksX-NG-Fork/releases)下载 DMG，打开后将 `ShadowsocksX-NG.app` 拖入“应用程序”。覆盖安装前先退出正在运行的旧版。覆盖应用不会删除已有的服务器配置或自定义 PAC 规则。
 
-正式发布的 DMG 与 ZIP 使用相同的版本名称，例如 `ShadowsocksX-NG.2026.9.3.dmg` 和 `ShadowsocksX-NG.2026.9.3.zip`；ZIP 内包含 DMG 和校验文件。
+正式 Release 提供带版本号的 DMG 和校验文件，例如 `ShadowsocksX-NG.2026.9.3.dmg`。正式构建的 Actions 下载包名为 `ShadowsocksX-NG.2026.9.3.zip`，其中包含同名 DMG 和校验文件。
 
 ## 本维护版本的改动
 
