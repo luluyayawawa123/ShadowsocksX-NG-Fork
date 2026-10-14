@@ -8,6 +8,8 @@
 
 从本仓库的 [Releases 页面](https://github.com/luluyayawawa123/ShadowsocksX-NG-Fork/releases)下载 DMG，打开后将 `ShadowsocksX-NG.app` 拖入“应用程序”。覆盖安装前先退出正在运行的旧版。覆盖应用不会删除已有的服务器配置或自定义 PAC 规则。
 
+正式发布的 DMG 与 ZIP 使用相同的版本名称，例如 `ShadowsocksX-NG.2026.9.3.dmg` 和 `ShadowsocksX-NG.2026.9.3.zip`；ZIP 内包含 DMG 和校验文件。
+
 ## 本维护版本的改动
 
 - 当前内置 GFWList 在发布时与[官方规则](https://github.com/gfwlist/gfwlist)同步。首次启动会直接使用内置规则；覆盖安装后，软件会用较新的内置规则替换本地旧规则。
@@ -15,6 +17,8 @@
 - 在菜单栏点击“从 GFW List 更新PAC”后，弹窗会说明更新成功、无需更新、下载源较旧或更新失败。成功时显示规则自身标注的 `Last Modified` 日期，而不是文件保存时间。
 - 规则或自定义规则改变后会重新生成 PAC；PAC 自动模式下会刷新正在使用的代理配置。
 - 修复手动更新 PAC 时重复重启代理服务可能造成的闪退。
+- PAC 默认通过本地 HTTP 代理转发，继续按 GFWList 和自定义规则自动分流；关闭现有 HTTP 服务开关后可使用 SOCKS5。全局模式默认开启 HTTP/HTTPS 系统代理，保留手动设置。
+- 本机回环地址 `127.0.0.1`、`localhost`、`::1` 绕过代理。
 
 ## 规则文件
 
